@@ -1,17 +1,36 @@
 from selenium import webdriver
-from lxml import html
+from selenium import webdriver
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
+from selenium.common.exceptions import TimeoutException
+from lxml import html
+
+
+recall_list=['2006_audi_a3', '2009_audi_q5', '2007_volvo_xc90']
 chrome_options = Options()
 chrome_options.add_experimental_option("detach", True)
-browser=webdriver.Chrome()
-browser.get('https://www.nhtsa.gov/vehicle/2006/AUDI/A3/4%252520DR/FWD%25252FAWD#recalls')
-htmlstring = browser.page_source
-browser.close()
-with open("yourhtmlfile.html", "w") as file:
-    file.write(htmlstring)
+browser=webdriver.Chrome(options=chrome_options)
 
-with open("/Users/yafei/Desktop/2006 AUDI A3 4 DR FWD_AWD _ NHTSA.html", "r") as file:
-    tree = html.fromstring(file.read())
+for item in recall_list:
+    url = f"https://www.nhtsa.gov/vehicle/{item.split('_')[0]}/{item.split('_')[1]}/{item.split('_')[2]}#recalls"
+    print(f"Open {url}")
+    browser.get(url)
+    timeout = 30
+    try:
+        element_present = EC.presence_of_element_located((By.ID, 'recalls'))
+        WebDriverWait(browser, timeout).until(element_present)
+        print ("Page is ready!")
+    except TimeoutException:
+        print ("Timed out waiting for page to load.")
+    
+    htmlstring = browser.page_source
+    with open(f'{item}.html', "w") as file:
+        file.write(htmlstring)
 
-detailedStr = tree.xpath('//*[@id="recalls380"]/div[1]/div[1]/p2/text()')
-print(detailedStr)
+    with open(f'{item}.html', "r") as file:
+        tree = html.fromstring(file.read())
+
+    detailedStr = tree.xpath('//*[@id="recalls"]//text()')
+    print(detailedStr)
